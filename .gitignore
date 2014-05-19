@@ -54,6 +54,8 @@ cloudify/.idea/*
 /azure/azure/.project
 /azure/azure/.settings/
 
+/eclipse-plugin/azurePlugin/resources/WorkerRole1/approot/jdk.zip
+
 # /azure/AzureMachineProvisioning/src/main/resources/csmanage/
 
 # /azure/GigaSpacesWorkerRoles/

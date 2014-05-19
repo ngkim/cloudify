@@ -38,14 +38,14 @@ import java.util.List;
  */
 public class RecipePathResolver {
 	
-	private static final String DEFAULT_SERVICES_PATH = "/recipes/services";
-	private static final String DEFAULT_APPS_PATH = "/recipes/apps";
-	private static final String DEFAULT_CLOUDS_PATH = "/clouds";
+	protected static String DEFAULT_SERVICES_PATH = "/recipes/services";
+	protected static String DEFAULT_APPS_PATH = "/recipes/apps";
+	protected static String DEFAULT_CLOUDS_PATH = "/clouds";
 	
-	private File currentDir = new File(".");
+	protected File currentDir = new File(".");
 	
-	private File resolved;
-	private List<String> pathsLooked = new ArrayList<String>();
+	protected File resolved;
+	protected List<String> pathsLooked = new ArrayList<String>();
 	
 	public void setCurrentDirectory(final File currentDir) {
 		this.currentDir = currentDir;
@@ -88,7 +88,7 @@ public class RecipePathResolver {
 	}
 
 	
-	private boolean resolve(final File recipeFileOrFolder, final String defaultLocation) {
+	protected boolean resolve(final File recipeFileOrFolder, final String defaultLocation) {
 		
 		// if an absolute path was given, just return it
 		if (recipeFileOrFolder.isAbsolute()) {
@@ -115,7 +115,7 @@ public class RecipePathResolver {
 		return false;	
 	}
 	
-	private File lookInCurrentDir(final File file) {
+	protected File lookInCurrentDir(final File file) {
 		File fileUnderCurrentDir = new File(currentDir + File.separator + file.getPath());
 		if (fileUnderCurrentDir.exists()) {
 			return fileUnderCurrentDir;
@@ -124,7 +124,7 @@ public class RecipePathResolver {
 		return null;
 	}
 	
-	private File lookInDefaultLocation(final File file, final String defaultLocation) {
+	protected File lookInDefaultLocation(final File file, final String defaultLocation) {
 		String homeDir = getHomeDir();
 		File fileUnderDefaultLocation = new File(homeDir + defaultLocation + File.separator + file.getPath());
 		if (fileUnderDefaultLocation.exists()) {
@@ -134,7 +134,7 @@ public class RecipePathResolver {
 		return null;
 	}
 	
-	private String getHomeDir() {
+	protected String getHomeDir() {
 		final String gsEnvClassName = "com.j_spaces.kernel.Environment";
 		try {
 			final Object envObject = Class.forName(gsEnvClassName).newInstance();
