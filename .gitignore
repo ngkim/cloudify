@@ -1,6 +1,7 @@
 *.launch
 *.iml
 *.pem
+*.class
 .metadata/
 .idea/*
 cloudify/.idea/*

@@ -223,7 +223,7 @@ public class DeploymentsController extends BaseRestController {
 	private static final int PU_DISCOVERY_TIMEOUT_SEC = 8;
 	private static final int LOCAL_CLOUD_INSTANCE_MEMORY_MB = 512;
 
-	private static final String REST_API_SERVER_URL = "http://221.145.180.87:8100";
+	private static final String REST_API_SERVER_URL = "http://127.0.0.1:8100";
 	private static final String REST_API_SERVER_VER = "2.7.1";
 	private static final String REST_API_SERVER_USR = "";
 	private static final String REST_API_SERVER_PWD = "";
