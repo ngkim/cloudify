@@ -236,6 +236,9 @@ public class DeploymentsController extends BaseRestController {
 	private static int tmpTotalDeploymentStep = 7;
 	private static int tmpDeploymentStatus = 0;
 
+	private static Date lastDate;
+	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45, 30};
+
 	@Autowired
 	private RestConfiguration restConfig;
 	@Autowired
@@ -1293,6 +1296,8 @@ public class DeploymentsController extends BaseRestController {
 		String redZoneInterface = request.getRedZoneInterface();
 		
 		UTMZone redZone = new UTMZone(redZoneIpAddress, redZoneBroadcast, redZoneNetwork, redZoneNetmask, redZoneInterface);
+		
+		boolean isDeploy = request.isDeploy();
 
 		Map<String, String> params = utmConfig(greenZone, orangeZone, redZone);
 				
@@ -1304,7 +1309,6 @@ public class DeploymentsController extends BaseRestController {
 
 		// create a deployment ID that would be used across all services.
 		final String deploymentID = UUID.randomUUID().toString();
-		debugMsg += deploymentID;
 				
 		// 4. install applications
 		try {
@@ -1313,9 +1317,9 @@ public class DeploymentsController extends BaseRestController {
 			appRequest.setApplicationName(appName);
 			appRequest.setApplcationFileUploadKey(applicationFileUploadKey);
 
-			restInstallApplication(appRequest, deploymentID);
+			if (isDeploy) restInstallApplication(appRequest, deploymentID);
 			
-			debugMsg += "Request has been processed sucessfully.";
+			debugMsg += "Request has been processed sucessfully (DeploymentID= " + deploymentID + ").";
 		} catch (RestErrorException e) {
 			debugMsg += e.getMessage();
 		}
@@ -1403,6 +1407,18 @@ public class DeploymentsController extends BaseRestController {
 				"yyyy-MM-dd HH:mm:ss");
 
 		Date now = new Date();
+		
+		if (lastDate == null) lastDate = now;
+		if (tmpDeploymentStatus == 0) tmpDeploymentStatus = 1;
+		
+		int nextStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1):1; 
+		
+		if( (now.getTime() - lastDate.getTime()) >= delayPerStep[tmpDeploymentStatus] * 1000) {
+			lastDate = now; // update lastDate
+			tmpDeploymentStatus = nextStatus;
+		} else {
+			now = lastDate; // return lastDate instead of now
+		}
 
 		return dateFormat.format(now);
 	}
@@ -1425,8 +1441,6 @@ public class DeploymentsController extends BaseRestController {
 
 		status.setTotalSteps(Integer.toString(tmpTotalDeploymentStep));
 
-		tmpDeploymentStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1)
-				: 1;
 		int curStep = tmpDeploymentStatus;
 
 		status.setCurrentStep(new String(Integer.toString(curStep)));

@@ -50,6 +50,8 @@ public class ConfigApplicationRequest {
 	private String redZoneNetmask;
 	private String redZoneInterface;
 	
+	private boolean deploy;
+	
 	public String getAdminPassword() {
 		return adminPassword;
 	}
@@ -208,5 +210,13 @@ public class ConfigApplicationRequest {
 
 	public void setRedZoneInterface(String redZoneInterface) {
 		this.redZoneInterface = redZoneInterface;
+	}
+
+	public boolean isDeploy() {
+		return deploy;
+	}
+
+	public void setDeploy(boolean deploy) {
+		this.deploy = deploy;
 	}		
 }
