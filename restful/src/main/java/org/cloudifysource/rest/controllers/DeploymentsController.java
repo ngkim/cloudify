@@ -237,7 +237,7 @@ public class DeploymentsController extends BaseRestController {
 	private static int tmpDeploymentStatus = 0;
 
 	private static Date lastDate;
-	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45, 30};
+	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45};
 
 	@Autowired
 	private RestConfiguration restConfig;
@@ -1356,7 +1356,7 @@ public class DeploymentsController extends BaseRestController {
 		response.setMessage(debugMsg);
 		
 		// set utm deployment status 1 (VM creation request has been sent)
-		tmpDeploymentStatus = 1;
+//		 tmpDeploymentStatus = 1;
 
 		return response;
 	}
@@ -1409,18 +1409,15 @@ public class DeploymentsController extends BaseRestController {
 		Date now = new Date();
 		
 		if (lastDate == null) lastDate = now;
+		
 		if (tmpDeploymentStatus == 0) tmpDeploymentStatus = 1;
-		
-		int nextStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1):1; 
-		
-		if( (now.getTime() - lastDate.getTime()) >= delayPerStep[tmpDeploymentStatus] * 1000) {
-			lastDate = now; // update lastDate
-			tmpDeploymentStatus = nextStatus;
-		} else {
-			now = lastDate; // return lastDate instead of now
+		else if( tmpDeploymentStatus == 1) {
+			lastDate = now;
 		}
-
-		return dateFormat.format(now);
+		
+		lastDate = new Date(lastDate.getTime() + delayPerStep[tmpDeploymentStatus-1] * 1000);
+		
+		return dateFormat.format(lastDate);
 	}
 
 	@RequestMapping(value = "/{deploymentId}/status", method = RequestMethod.GET)
@@ -1440,7 +1437,9 @@ public class DeploymentsController extends BaseRestController {
 		DeploymentStatus status = new DeploymentStatus();
 
 		status.setTotalSteps(Integer.toString(tmpTotalDeploymentStep));
-
+		
+		tmpDeploymentStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1):1;
+		
 		int curStep = tmpDeploymentStatus;
 
 		status.setCurrentStep(new String(Integer.toString(curStep)));
