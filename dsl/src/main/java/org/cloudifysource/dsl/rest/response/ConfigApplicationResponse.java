@@ -53,6 +53,8 @@ public class ConfigApplicationResponse {
 	
 	private String deploymentID;
 	
+	private String message;
+	
 	public String getAppName() {
 		return appName;
 	}
@@ -227,6 +229,14 @@ public class ConfigApplicationResponse {
 
 	public void setDeploymentID(String deploymentID) {
 		this.deploymentID = deploymentID;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
 	}
 	
 }

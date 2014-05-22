@@ -935,7 +935,7 @@ public class DeploymentsController extends BaseRestController {
 
 		File propertyFile = new File(parent, propertyFileName);
 		try {
-			fos = new FileOutputStream(propertyFile, true);
+			fos = new FileOutputStream(propertyFile, false); // not append, overwrite
 			ps = new PrintStream(fos);
 
 			Iterator<Entry<String, String>> it = params.entrySet().iterator();
@@ -1173,6 +1173,89 @@ public class DeploymentsController extends BaseRestController {
 
 	}
 	
+	private class UTMZone {
+		private String ipAddress;
+		private String broadcast;
+		private String network;
+		private String netmask;
+		private String intf;
+		
+		public UTMZone(String ipAddr, String broad, String network, String netmask, String intf){
+			this.ipAddress = ipAddr;
+			this.broadcast = broad;
+			this.network = network;
+			this.netmask = netmask;
+			this.intf = intf;
+		}
+
+		public String getIpAddress() {
+			return ipAddress;
+		}
+
+		public void setIpAddress(String ipAddress) {
+			this.ipAddress = ipAddress;
+		}
+
+		public String getBroadcast() {
+			return broadcast;
+		}
+
+		public void setBroadcast(String broadcast) {
+			this.broadcast = broadcast;
+		}
+
+		public String getNetwork() {
+			return network;
+		}
+
+		public void setNetwork(String network) {
+			this.network = network;
+		}
+
+		public String getNetmask() {
+			return netmask;
+		}
+
+		public void setNetmask(String netmask) {
+			this.netmask = netmask;
+		}
+
+		public String getIntf() {
+			return intf;
+		}
+
+		public void setIntf(String intf) {
+			this.intf = intf;
+		}
+		
+		
+	}
+	
+	private Map<String, String> utmConfig(UTMZone green, UTMZone orange, UTMZone red){
+		Map<String, String> params = new HashMap<String, String>();
+		
+		params.put("ADMIN_PASSWORD", "endian");
+		params.put("ROOT_PASSWORD", "endian");
+		params.put("DOMAINNAME", "localdomain");
+		
+		params.put("GREEN_ADDRESS", green.getIpAddress());
+		params.put("GREEN_BROADCAST", green.getBroadcast());
+		params.put("GREEN_NETADDRESS", green.getNetwork());
+		params.put("GREEN_NETMASK", green.getNetmask());
+		
+		params.put("ORANGE_ADDRESS", orange.getIpAddress());
+		params.put("ORANGE_BROADCAST", orange.getBroadcast());
+		params.put("ORANGE_NETADDRESS", orange.getNetwork());
+		params.put("ORANGE_NETMASK", orange.getNetmask());
+		
+		params.put("RED_ADDRESS", red.getIpAddress());
+		params.put("RED_BROADCAST", red.getBroadcast());
+		params.put("RED_NETADDRESS", red.getNetwork());
+		params.put("RED_NETMASK", red.getNetmask());
+		
+		return params;
+	}
+	
 	@RequestMapping(value = "/applications/{appName}/configuration", method = RequestMethod.POST)
 	@PreAuthorize("isFullyAuthenticated() and hasPermission(#request.getAuthGroups(), 'deploy')")
 	public ConfigApplicationResponse configApplication(
@@ -1192,36 +1275,36 @@ public class DeploymentsController extends BaseRestController {
 		String greenZoneNetwork = request.getGreenZoneNetwork();
 		String greenZoneNetmask = request.getGreenZoneNetmask();
 		String greenZoneInterface = request.getGreenZoneInterface();
-
+		
+		UTMZone greenZone = new UTMZone(greenZoneIpAddress, greenZoneBroadcast, greenZoneNetwork, greenZoneNetmask, greenZoneInterface);
+		
 		String orangeZoneIpAddress = request.getOrangeZoneIpAddress();
 		String orangeZoneBroadcast = request.getOrangeZoneBroadcast();
 		String orangeZoneNetwork = request.getOrangeZoneNetwork();
 		String orangeZoneNetmask = request.getOrangeZoneNetmask();
 		String orangeZoneInterface = request.getOrangeZoneInterface();
+		
+		UTMZone orangeZone = new UTMZone(orangeZoneIpAddress, orangeZoneBroadcast, orangeZoneNetwork, orangeZoneNetmask, orangeZoneInterface);
 
 		String redZoneIpAddress = request.getRedZoneIpAddress();
 		String redZoneBroadcast = request.getRedZoneBroadcast();
 		String redZoneNetwork = request.getRedZoneNetwork();
 		String redZoneNetmask = request.getRedZoneNetmask();
 		String redZoneInterface = request.getRedZoneInterface();
+		
+		UTMZone redZone = new UTMZone(redZoneIpAddress, redZoneBroadcast, redZoneNetwork, redZoneNetmask, redZoneInterface);
 
-		Map<String, String> params = new HashMap<String, String>();
-		params.put("greenZoneIpAddress", greenZoneIpAddress);
-		params.put("greenZoneNetmask", greenZoneNetmask);
-		params.put("orangeZoneIpAddress", orangeZoneIpAddress);
-		params.put("orangeZoneNetmask", orangeZoneNetmask);
-		params.put("redZoneIpAddress", redZoneIpAddress);
-		params.put("redZoneNetmask", redZoneNetmask);
-
+		Map<String, String> params = utmConfig(greenZone, orangeZone, redZone);
+				
 		// save properties into service configuration file
 		File svcDir = saveServiceProperties("endian_simple", params);				
 		File packedFile = getPackedFile(appName, resolveApplicationDir(appName));
 
 		String applicationFileUploadKey = uploadFile(packedFile.getName(), packedFile);
-		debugMsg += applicationFileUploadKey;
 
 		// create a deployment ID that would be used across all services.
 		final String deploymentID = UUID.randomUUID().toString();
+		debugMsg += deploymentID;
 				
 		// 4. install applications
 		try {
@@ -1231,6 +1314,8 @@ public class DeploymentsController extends BaseRestController {
 			appRequest.setApplcationFileUploadKey(applicationFileUploadKey);
 
 			restInstallApplication(appRequest, deploymentID);
+			
+			debugMsg += "Request has been processed sucessfully.";
 		} catch (RestErrorException e) {
 			debugMsg += e.getMessage();
 		}
@@ -1263,8 +1348,8 @@ public class DeploymentsController extends BaseRestController {
 		response.setRedZoneInterface(redZoneInterface);
 		
 		response.setDeploymentID(deploymentID);
-
-		response.setDeviceName(debugMsg);
+		
+		response.setMessage(debugMsg);
 		
 		// set utm deployment status 1 (VM creation request has been sent)
 		tmpDeploymentStatus = 1;
