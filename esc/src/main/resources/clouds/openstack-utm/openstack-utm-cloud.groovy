@@ -1,9 +1,9 @@
 /***************
- * Cloud configuration file for the openstack-grizzly cloud
+ * Cloud configuration file for the openstack-havana cloud
  */
 cloud {
 	// Mandatory. The name of the cloud, as it will appear in the Cloudify UI.
-	name = "openstack-grizzly"
+	name = "openstack-havana"
 
 	/********
 	 * General configuration information about the cloud driver implementation.
@@ -15,7 +15,7 @@ cloud {
 		storageClassName "org.cloudifysource.esc.driver.provisioning.storage.openstack.OpenstackStorageDriver"
 
 		// Optional. The template name for the management machines. Defaults to the first template in the templates section below.
-		managementMachineTemplate "MEDIUM_LINUX"
+		managementMachineTemplate "SMALL_LINUX"
 		// Optional. Indicates whether internal cluster communications should use the machine private IP. Defaults to true.
 		connectToPrivateIp true
 	}
@@ -35,6 +35,7 @@ cloud {
 		// IMPORTANT: the default linux bootstrap script appends '.tar.gz' to the url whereas the default windows script appends '.zip'.
 		// Therefore, if setting a custom URL, make sure to leave out the suffix.
 		// cloudifyUrl "http://repository.cloudifysource.org/org/cloudifysource/2.7.0-5996-RELEASE/gigaspaces-cloudify-2.7.0-ga-b5996.zip"
+		cloudifyUrl myCloudifyUrl
 
 		// Mandatory. The prefix for new machines started for servies.
 		machineNamePrefix "cloudify-agent-"
@@ -84,7 +85,7 @@ cloud {
 									path "/storage"
 									namePrefix "cloudify-storage-volume"
 									deviceName "/dev/vdc"
-									fileSystemType "ext4"
+									fileSystemType "ext3"
 									custom (["openstack.storage.volume.zone":availabilityZone])
 					}
 			])
@@ -103,7 +104,7 @@ cloud {
 					subnet {
 						name "Cloudify-Management-Subnet"
 						range "177.86.0.0/24"
-						options ([ "gateway" : "177.86.0.111" ])
+						options ([ "gateway" : "177.86.0.111", "dnsNameServers" : "8.8.8.8" ])
 					}
 				])
 				custom ([ "associateFloatingIpOnBootstrap" : "true" ])
@@ -148,7 +149,9 @@ cloud {
                     // are not used.
                     keyFile keyFile
 
-                    username "root"
+                    username mgmtUser
+                    password mgmtPass
+
 
                     // Additional template options.
                     // When used with the default driver, the option names are considered
@@ -158,7 +161,7 @@ cloud {
                             // "computeServiceName" : "nova",
 
                             // Optional. Set the name to search to find openstack compute endpoint.
-                            // "networkServiceName" : "quantum",
+                            // "networkServiceName" : "neutron",
 
                             // Optional. Set the network api version .
                             // "networkApiVersion"  : "v2.0",
@@ -199,7 +202,7 @@ cloud {
                     privileged true
 
                     // optional. A native command line to be executed before the cloudify agent is started.
-                    initializationCommand "#!/bin/sh\ncp /etc/hosts /tmp/hosts\necho 127.0.0.1 `hostname` > /etc/hosts\ncat  /tmp/hosts >> /etc/hosts"
+                    initializationCommand "#!/bin/sh\ncp /etc/hosts /tmp/hosts\necho 127.0.0.1 `hostname` > /etc/hosts\necho Asia/Seoul > /etc/timezone\ndpkg-reconfigure --frontend nonint    eractive tzdata\ncat /tmp/hosts >> /etc/hosts\nresize2fs /dev/vda1"
 
                     //optional - set the availability zone, required to match storage
                     custom (["openstack.compute.zone":availabilityZone])
@@ -219,7 +222,8 @@ cloud {
 				// are not used.
 				keyFile keyFile
 
-				username "root"
+				username mgmtUser
+				password mgmtPass
 				
 				// Additional template options.
 				// When used with the default driver, the option names are considered
@@ -270,9 +274,39 @@ cloud {
 				privileged true
 
 				// optional. A native command line to be executed before the cloudify agent is started.
-                initializationCommand "echo Cloudify agent is about to start"
+  				initializationCommand "#!/bin/sh\ncp /etc/hosts /tmp/hosts\necho 127.0.0.1 `hostname` > /etc/hosts\necho Asia/Seoul > /etc/timezone\ndpkg-reconfigure --frontend nonint    eractive tzdata\ncat /tmp/hosts >> /etc/hosts\nresize2fs /dev/vda1"
                                                 
 				//optional - set the availability zone, required to match storage
+				custom (["openstack.compute.zone":availabilityZone])
+			},
+            ENDIAN_UTM : computeTemplate{
+				imageId endianImageId
+				remoteDirectory "/root/gs-files"
+				machineMemoryMB 1900
+				hardwareId endianHardwareId
+				localDirectory "upload"
+				keyFile keyFile
+
+				username endianUser
+				password endianPass
+				
+				options ([
+					"keyPairName" : keyPair
+				])
+				
+				autoRestartAgent true
+
+				computeNetwork {
+                    networks (["net-utm-ext", "net-utm-int", "net-utm-svr"])
+                }
+ 
+				overrides ([
+					"openstack.endpoint": openstackUrl
+				])
+
+				privileged true
+
+  				initializationCommand "#!/bin/sh\ncp /etc/hosts /tmp/hosts\necho 127.0.0.1 `hostname` > /etc/hosts\ncat /tmp/hosts >> /etc/hosts\nresize2fs /dev/vda1"
 				custom (["openstack.compute.zone":availabilityZone])
 			}
 		])
