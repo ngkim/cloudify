@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -103,7 +102,6 @@ import org.cloudifysource.dsl.rest.response.ServiceMetricsResponse;
 import org.cloudifysource.dsl.rest.response.UninstallApplicationResponse;
 import org.cloudifysource.dsl.rest.response.UninstallServiceResponse;
 import org.cloudifysource.dsl.rest.response.UploadResponse;
-import org.cloudifysource.dsl.utils.RecipePathResolver;
 import org.cloudifysource.dsl.utils.ServiceUtils;
 import org.cloudifysource.rest.ResponseConstants;
 import org.cloudifysource.rest.RestConfiguration;
@@ -236,7 +234,7 @@ public class DeploymentsController extends BaseRestController {
 	private static int tmpTotalDeploymentStep = 7;
 	private static int tmpDeploymentStatus = 0;
 	
-	private static Map<String, Integer> deploymentStatus;
+//	private static Map<String, Integer> deploymentStatus;
 
 	private static Date lastDate;
 //	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45};
@@ -920,21 +918,6 @@ public class DeploymentsController extends BaseRestController {
 		return response;
 	}
 
-	// deprecated as its adding a comment on top of the file starting with '#'
-	private File writeToPropertiesFile(File parent, String propertyFileName,
-			Properties props) {
-		File propertyFile = new File(parent, propertyFileName);
-		FileOutputStream fos;
-		try {
-			fos = new FileOutputStream(propertyFile);
-			props.store(fos, "Properties file generated from Rest API");
-			fos.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return propertyFile;
-	}
-
 	private File writeToProperties(File parent, String propertyFileName,
 			Map<String, String> params) {
 		FileOutputStream fos = null;
@@ -1001,27 +984,6 @@ public class DeploymentsController extends BaseRestController {
 		return new ApplicationResolver(applicationFile, overrides);
 	}
 
-	private void uploadTest(String applicationName, File applicationFile,
-			File overrides) throws CLIStatusException {
-		// resolve the path for the given app input
-		final RecipePathResolver pathResolver = new RecipePathResolver();
-		if (pathResolver.resolveApplication(applicationFile)) {
-			applicationFile = pathResolver.getResolved();
-		} else {
-			throw new CLIStatusException("application_not_found",
-					StringUtils.join(pathResolver.getPathsLooked().toArray(),
-							", "));
-		}
-		// resolve packed file and application name
-		final NameAndPackedFileResolver nameAndPackedFileResolver = getResolver(
-				applicationFile, overrides);
-		if (StringUtils.isBlank(applicationName)) {
-			applicationName = nameAndPackedFileResolver.getName();
-		}
-
-		final File packedFile = nameAndPackedFileResolver.getPackedFile();
-	}
-
 	private File resolveServiceDir(String svcName) {
 		File svcDir = new File(svcName);
 		// 1. resolve the path for the given service input
@@ -1085,32 +1047,13 @@ public class DeploymentsController extends BaseRestController {
 
 		// 1. create properties file
 		// 2. write parameters into the properties files
-		File propertiesFile = writeToProperties(svcDir,
-				propertiesFileName, params);
+//		File propertiesFile = writeToProperties(svcDir, propertiesFileName, params);
+		writeToProperties(svcDir, propertiesFileName, params);
 
 		return svcDir;
 	}
 	
 	
-	private File storeProperties(String appName, Map<String, String> params) {
-		// 1. resolve the path for the given service input
-		File applicationDir = resolveApplicationDir(appName);
-
-		// TODO: change to use service
-		// String propertiesFileName =
-		// DSLUtils.getPropertiesFileName(applicationFile,
-		// DSLUtils.APPLICATION_DSL_FILE_NAME_SUFFIX);
-		String propertiesFileName = "EndianUTM.config";
-		debugMsg += propertiesFileName;
-
-		// 1. create properties file
-		// 2. write parameters into the properties files
-		File propertiesFile = writeToProperties(applicationDir,
-				propertiesFileName, params);
-
-		return applicationDir;
-	}
-
 	private String restInstallApplication(InstallApplicationRequest request, String deploymentID)
 			throws RestErrorException {
 		String appName = request.getApplicationName();
@@ -1306,7 +1249,8 @@ public class DeploymentsController extends BaseRestController {
 		Map<String, String> params = utmConfig(greenZone, orangeZone, redZone);
 				
 		// save properties into service configuration file
-		File svcDir = saveServiceProperties("endian_simple", params);				
+//		File svcDir = saveServiceProperties("endian_simple", params);
+		saveServiceProperties("endian_simple", params);
 		File packedFile = getPackedFile(appName, resolveApplicationDir(appName));
 
 		String applicationFileUploadKey = uploadFile(packedFile.getName(), packedFile);
@@ -1405,43 +1349,6 @@ public class DeploymentsController extends BaseRestController {
 		return message;
 	}
 	
-	private int getDeploymentStatus(String deploymentId) {
-		int status = 0;
-		
-		if (deploymentStatus == null) { 
-			deploymentStatus = new HashMap<String, Integer>();
-			return -1;
-		}
-		
-		Integer val = null;
-		val = deploymentStatus.get(deploymentId);
-		if (val == null) {
-			status = -2; 
-		} else {
-			status = val.intValue();
-		}
-		
-		return status;
-	}
-	
-	private int setDeploymentStatus(String deploymentId, int status) {
-		if (deploymentStatus == null) { 
-			deploymentStatus = new HashMap<String, Integer>();
-			return -1;
-		}
-		
-		Integer val = deploymentStatus.get(deploymentId); 
-		
-		if (val == null) {
-			status = -2; 
-		} else {
-			val = new Integer(status);
-			deploymentStatus.put(deploymentId, val);			
-		}
-		
-		return status;
-	}
-
 	// ngkim: getDate - return current date info including seconds
 	private String getDate(boolean wait) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat(
@@ -1497,48 +1404,6 @@ public class DeploymentsController extends BaseRestController {
 		return status;
 	}
 	
-	private String getTimeWait() {
-		String timeToWait = "";
-		
-		String waitFile = "/tmp/wait.time";
-		BufferedReader br = null;
-
-		try {
-			File file = new File(waitFile);
-
-			if (file.createNewFile()) {
-				// If there's no mgmt.url, create it with default url info.
-				timeToWait = "0,120,30,42,33,22,45";
-
-				// true = append file
-				FileWriter fileWritter = new FileWriter(file.getName(), true);
-				BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
-				bufferWritter.write(timeToWait);
-				bufferWritter.close();
-			} else {
-				// If there's mgmt.url, read url from it.
-				br = new BufferedReader(new FileReader(file.getName()));
-
-				String tmpLine = "";
-				while ((tmpLine = br.readLine()) != null) {
-					timeToWait = tmpLine;
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)
-					br.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-		
-		return timeToWait;
-
-	}
-
 	private String getMgmtUrl() {
 		String mgmtUrl = "";
 		BufferedReader br = null;
