@@ -235,9 +235,13 @@ public class DeploymentsController extends BaseRestController {
 	// Set to 0 when UTM configuration has requested
 	private static int tmpTotalDeploymentStep = 7;
 	private static int tmpDeploymentStatus = 0;
+	
+	private static Map<String, Integer> deploymentStatus;
 
 	private static Date lastDate;
-	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45};
+//	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45};
+//	private static int[] delayPerStep = {0, 120, 30, 42, 33, 22, 45, 30};
+	private static int[] delayPerStep = {0, 5, 4, 3, 3, 4, 2, 2};
 
 	@Autowired
 	private RestConfiguration restConfig;
@@ -1400,22 +1404,65 @@ public class DeploymentsController extends BaseRestController {
 
 		return message;
 	}
+	
+	private int getDeploymentStatus(String deploymentId) {
+		int status = 0;
+		
+		if (deploymentStatus == null) { 
+			deploymentStatus = new HashMap<String, Integer>();
+			return -1;
+		}
+		
+		Integer val = null;
+		val = deploymentStatus.get(deploymentId);
+		if (val == null) {
+			status = -2; 
+		} else {
+			status = val.intValue();
+		}
+		
+		return status;
+	}
+	
+	private int setDeploymentStatus(String deploymentId, int status) {
+		if (deploymentStatus == null) { 
+			deploymentStatus = new HashMap<String, Integer>();
+			return -1;
+		}
+		
+		Integer val = deploymentStatus.get(deploymentId); 
+		
+		if (val == null) {
+			status = -2; 
+		} else {
+			val = new Integer(status);
+			deploymentStatus.put(deploymentId, val);			
+		}
+		
+		return status;
+	}
 
 	// ngkim: getDate - return current date info including seconds
-	private String getDate() {
+	private String getDate(boolean wait) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat(
 				"yyyy-MM-dd HH:mm:ss");
 
 		Date now = new Date();
-		
-		if (lastDate == null) lastDate = now;
-		
+		if (lastDate == null) lastDate = now; // initialization		
 		if (tmpDeploymentStatus == 0) tmpDeploymentStatus = 1;
-		else if( tmpDeploymentStatus == 1) {
-			lastDate = now;
-		}
 		
-		lastDate = new Date(lastDate.getTime() + delayPerStep[tmpDeploymentStatus-1] * 1000);
+		if (wait) { // real wait
+			int nextStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1):1;
+			if( (now.getTime() - lastDate.getTime()) >= delayPerStep[tmpDeploymentStatus] * 1000) {
+				lastDate = now;
+				tmpDeploymentStatus = nextStatus;
+			} 
+		} else { // just print wait time
+			if( tmpDeploymentStatus == 1) {
+				lastDate = now;
+			} else 
+				lastDate = new Date(lastDate.getTime() + delayPerStep[tmpDeploymentStatus-1] * 1000);			
+		}
 		
 		return dateFormat.format(lastDate);
 	}
@@ -1445,9 +1492,51 @@ public class DeploymentsController extends BaseRestController {
 		status.setCurrentStep(new String(Integer.toString(curStep)));
 		status.setStatus("OK");
 		status.setMessage(getStatusMessage(curStep));
-		status.setTime(getDate());
+		status.setTime(getDate(true));
 
 		return status;
+	}
+	
+	private String getTimeWait() {
+		String timeToWait = "";
+		
+		String waitFile = "/tmp/wait.time";
+		BufferedReader br = null;
+
+		try {
+			File file = new File(waitFile);
+
+			if (file.createNewFile()) {
+				// If there's no mgmt.url, create it with default url info.
+				timeToWait = "0,120,30,42,33,22,45";
+
+				// true = append file
+				FileWriter fileWritter = new FileWriter(file.getName(), true);
+				BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+				bufferWritter.write(timeToWait);
+				bufferWritter.close();
+			} else {
+				// If there's mgmt.url, read url from it.
+				br = new BufferedReader(new FileReader(file.getName()));
+
+				String tmpLine = "";
+				while ((tmpLine = br.readLine()) != null) {
+					timeToWait = tmpLine;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (br != null)
+					br.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		return timeToWait;
+
 	}
 
 	private String getMgmtUrl() {
