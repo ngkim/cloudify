@@ -233,6 +233,7 @@ public class DeploymentsController extends BaseRestController {
 	// Set to 0 when UTM configuration has requested
 	private static int tmpTotalDeploymentStep = 7;
 	private static int tmpDeploymentStatus = 0;
+	private static Map<String, DeploymentStatus> deploymentMap;
 	
 //	private static Map<String, Integer> deploymentStatus;
 
@@ -1257,9 +1258,26 @@ public class DeploymentsController extends BaseRestController {
 
 		// create a deployment ID that would be used across all services.
 		final String deploymentID = UUID.randomUUID().toString();
-				
+		
 		// 4. install applications
 		try {
+			// init deploymentMap
+			if(deploymentMap == null) {
+				deploymentMap = new HashMap<String, DeploymentStatus>();
+			}
+					
+			DeploymentStatus status = new DeploymentStatus();
+
+			int firstStep = 1;
+			status.setTotalSteps(Integer.toString(tmpTotalDeploymentStep));
+			
+			status.setCurrentStep(new String(Integer.toString(firstStep)));
+			status.setStatus("OK");
+			status.setMessage(getStatusMessage(firstStep));
+			status.setTime(getDate(false));
+			
+			deploymentMap.put(deploymentID, status);
+			
 			InstallApplicationRequest appRequest = new InstallApplicationRequest();
 
 			appRequest.setApplicationName(appName);
@@ -1314,28 +1332,28 @@ public class DeploymentsController extends BaseRestController {
 
 		switch (status) {
 		case 1:
-			message = "VM 생성을 요청하였습니다.";
-			message = "Send request to create a VM.";
+			message = "Appliance VM 생성을 요청하였습니다.";
+			message = "Send request to create an appliance VM.";
 			break;
 		case 2:
-			message = "VM 생성 완료되었습니다.";
-			message = "VM has been successfully created.";
+			message = "Appliance VM 생성 완료되었습니다.";
+			message = "The appliance VM has been successfully created.";
 			break;
 		case 3:
-			message = "VM과 연결을 확인합니다.";
-			message = "Try to connect to the VM";
+			message = "Appliance VM과 연결을 확인합니다.";
+			message = "Try to connect to the Appliance VM";
 			break;
 		case 4:
-			message = "VM과 연결되었습니다.";
-			message = "Successfully connected to the VM.";
+			message = "Appliance VM과 연결되었습니다.";
+			message = "Successfully connected to the Appliance VM.";
 			break;
 		case 5:
-			message = "UTM 설정을 요청하였습니다.";
-			message = "Request to configure UTM.";
+			message = "Appliance 설정을 요청하였습니다.";
+			message = "Request to configure the Appliance.";
 			break;
 		case 6:
-			message = "UTM 설정을 완료하였습니다.";
-			message = "UTM configuration has successfully completed.";
+			message = "Appliance 설정을 완료하였습니다.";
+			message = "Appliance configuration has successfully completed.";
 			break;
 		case 7:
 			message = "구성이 완료되었습니다.";
@@ -1388,18 +1406,20 @@ public class DeploymentsController extends BaseRestController {
 		/* TODO: ngkim, enable verifyDeploymentIdExists */
 		// verifyDeploymentIdExists(deploymentId);
 
-		DeploymentStatus status = new DeploymentStatus();
-
-		status.setTotalSteps(Integer.toString(tmpTotalDeploymentStep));
+		DeploymentStatus status = (DeploymentStatus)deploymentMap.get(deploymentId);
 		
-		tmpDeploymentStatus = (tmpDeploymentStatus < tmpTotalDeploymentStep) ? (tmpDeploymentStatus + 1):1;
-		
-		int curStep = tmpDeploymentStatus;
+		int totalStep = Integer.parseInt(status.getTotalSteps());
+		int curStep = Integer.parseInt(status.getCurrentStep());
 
-		status.setCurrentStep(new String(Integer.toString(curStep)));
+		int newStep = (curStep < totalStep) ? (curStep + 1):1;		
+		
+		status.setCurrentStep(new String(Integer.toString(newStep)));
 		status.setStatus("OK");
-		status.setMessage(getStatusMessage(curStep));
-		status.setTime(getDate(true));
+		status.setMessage(getStatusMessage(newStep));
+		status.setTime(getDate(false));
+		
+		// update deployment status
+		deploymentMap.put(deploymentId, status);
 
 		return status;
 	}
