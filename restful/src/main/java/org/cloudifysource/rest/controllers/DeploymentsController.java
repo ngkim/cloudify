@@ -1268,7 +1268,7 @@ public class DeploymentsController extends BaseRestController {
 					
 			DeploymentStatus status = new DeploymentStatus();
 
-			int firstStep = 1;
+			int firstStep = 0;
 			status.setTotalSteps(Integer.toString(tmpTotalDeploymentStep));
 			
 			status.setCurrentStep(new String(Integer.toString(firstStep)));
@@ -1331,6 +1331,10 @@ public class DeploymentsController extends BaseRestController {
 		String message = "";
 
 		switch (status) {
+		case 0:
+			message = "Appliance Manager로 연결을 준비 중입니다.";
+			message = "Prepare connection to the Appliance Manager.";
+			break;
 		case 1:
 			message = "Appliance VM 생성을 요청하였습니다.";
 			message = "Send request to create an appliance VM.";
