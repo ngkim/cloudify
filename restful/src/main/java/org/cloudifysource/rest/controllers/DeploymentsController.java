@@ -1428,17 +1428,39 @@ public class DeploymentsController extends BaseRestController {
 		return status;
 	}
 	
-	private String getMgmtUrl() {
+	private String setMgmtUrl(String serviceName) {
+		String mgmtUrl = "";
+		
+		// set mgmtUrl for each serviceName
+		if(serviceName.trim().equals("firewall")) {
+			mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";			
+		} else if (serviceName.trim().equals("vpn")) {
+			mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";
+		} else if (serviceName.trim().equals("ips")) {
+			mgmtUrl = "http://221.145.180.72";
+		} else if (serviceName.trim().equals("soip")) {
+			mgmtUrl = "telnet://221.145.180.85";
+		} else {
+			mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";	
+		}
+		
+		return mgmtUrl;		
+	}
+	
+	private String getMgmtUrl(String serviceName) {
 		String mgmtUrl = "";
 		BufferedReader br = null;
 
+		// generate fileName by concatenating serviceName with '.mgmt.url'
+		String mgmtUrlFile = serviceName + ".mgmt.url";
+		
 		try {
-			File file = new File("mgmt.url");
+			File file = new File(mgmtUrlFile);
 
 			if (file.createNewFile()) {
 				// If there's no mgmt.url, create it with default url info.
-				mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";
-
+				mgmtUrl = setMgmtUrl(serviceName);
+				
 				// true = append file
 				FileWriter fileWritter = new FileWriter(file.getName(), true);
 				BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
@@ -1485,7 +1507,7 @@ public class DeploymentsController extends BaseRestController {
 
 		DeploymentResult result = new DeploymentResult();
 
-		String mgmtUrl = getMgmtUrl();
+		String mgmtUrl = getMgmtUrl(serviceName);
 
 		result.setMgmtUrl(mgmtUrl);
 
