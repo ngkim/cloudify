@@ -1438,7 +1438,7 @@ public class DeploymentsController extends BaseRestController {
 			mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";
 		} else if (serviceName.trim().equals("ips")) {
 			mgmtUrl = "http://221.145.180.72";
-		} else if (serviceName.trim().equals("soip")) {
+		} else if (serviceName.trim().equals("voip")) {
 			mgmtUrl = "telnet://221.145.180.85";
 		} else {
 			mgmtUrl = "https://221.145.180.73:10443/manage/dashboard";	
