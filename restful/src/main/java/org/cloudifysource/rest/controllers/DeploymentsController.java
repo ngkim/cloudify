@@ -1215,6 +1215,8 @@ public class DeploymentsController extends BaseRestController {
 			throws RestErrorException {
 		debugMsg = "";
 
+		String seqId = request.getSeqId();
+		
 		String adminPassword = request.getAdminPassword();
 		String rootPassword = request.getRootPassword();
 		String hostName = request.getHostName();
@@ -1246,8 +1248,12 @@ public class DeploymentsController extends BaseRestController {
 		UTMZone redZone = new UTMZone(redZoneIpAddress, redZoneBroadcast, redZoneNetwork, redZoneNetmask, redZoneInterface);
 		
 		boolean isDeploy = request.isDeploy();
-
+		// create a deployment ID that would be used across all services.
+		final String deploymentID = UUID.randomUUID().toString();
+		
 		Map<String, String> params = utmConfig(greenZone, orangeZone, redZone);
+		params.put("seqId", seqId);
+		params.put("deploymentId", deploymentID);
 				
 		// save properties into service configuration file
 //		File svcDir = saveServiceProperties("endian_simple", params);
@@ -1255,9 +1261,6 @@ public class DeploymentsController extends BaseRestController {
 		File packedFile = getPackedFile(appName, resolveApplicationDir(appName));
 
 		String applicationFileUploadKey = uploadFile(packedFile.getName(), packedFile);
-
-		// create a deployment ID that would be used across all services.
-		final String deploymentID = UUID.randomUUID().toString();
 		
 		// 4. install applications
 		try {
@@ -1292,6 +1295,9 @@ public class DeploymentsController extends BaseRestController {
 
 		// creating response
 		final ConfigApplicationResponse response = new ConfigApplicationResponse();
+		
+		response.setSeqId(seqId);
+		
 		response.setAppName(appName);
 		response.setAdminPassword(adminPassword);
 		response.setRootPassword(rootPassword);
@@ -1415,7 +1421,8 @@ public class DeploymentsController extends BaseRestController {
 		int totalStep = Integer.parseInt(status.getTotalSteps());
 		int curStep = Integer.parseInt(status.getCurrentStep());
 
-		int newStep = (curStep < totalStep) ? (curStep + 1):1;		
+		// set totalStep as newStep if curStep reaches totalStep 
+		int newStep = (curStep < totalStep) ? (curStep + 1):totalStep;		
 		
 		status.setCurrentStep(new String(Integer.toString(newStep)));
 		status.setStatus("OK");

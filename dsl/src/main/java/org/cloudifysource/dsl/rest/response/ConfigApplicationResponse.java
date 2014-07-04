@@ -24,6 +24,7 @@ import java.util.Map;
  *
  */
 public class ConfigApplicationResponse {
+	private String seqId;
 	
 	private String appName;
 	private String adminPassword;
@@ -237,6 +238,14 @@ public class ConfigApplicationResponse {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public String getSeqId() {
+		return seqId;
+	}
+
+	public void setSeqId(String seqId) {
+		this.seqId = seqId;
 	}
 	
 }

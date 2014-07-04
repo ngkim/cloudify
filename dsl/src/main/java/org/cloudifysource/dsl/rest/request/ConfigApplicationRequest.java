@@ -26,6 +26,8 @@ import java.util.Map;
  */
 public class ConfigApplicationRequest {
 
+	private String seqId;
+	
 	private String adminPassword;
 	private String rootPassword;
 	private String domainName;
@@ -218,5 +220,13 @@ public class ConfigApplicationRequest {
 
 	public void setDeploy(boolean deploy) {
 		this.deploy = deploy;
+	}
+
+	public String getSeqId() {
+		return seqId;
+	}
+
+	public void setSeqId(String seqId) {
+		this.seqId = seqId;
 	}		
 }
