@@ -101,6 +101,7 @@ import org.cloudifysource.dsl.rest.response.ServiceInstanceMetricsResponse;
 import org.cloudifysource.dsl.rest.response.ServiceMetricsResponse;
 import org.cloudifysource.dsl.rest.response.UninstallApplicationResponse;
 import org.cloudifysource.dsl.rest.response.UninstallServiceResponse;
+import org.cloudifysource.dsl.rest.response.UninstallServiceResult;
 import org.cloudifysource.dsl.rest.response.UploadResponse;
 import org.cloudifysource.dsl.utils.ServiceUtils;
 import org.cloudifysource.rest.ResponseConstants;
@@ -1494,6 +1495,35 @@ public class DeploymentsController extends BaseRestController {
 		}
 
 		return mgmtUrl;
+	}
+	
+	@RequestMapping(value = "/{deploymentId}/services/{serviceName}", method = RequestMethod.DELETE)
+	public UninstallServiceResult removeServiceByDeploymentId(
+			@PathVariable final String deploymentId,
+			@PathVariable final String serviceName)
+			throws ResourceNotFoundException, RestErrorException {
+
+		if (deploymentId == null) {
+			throw new RestErrorException(
+					CloudifyErrorMessages.MISSING_DEPLOYMENT_ID.getName(),
+					"getApplicationStatusByDeploymentId");
+		}
+
+		/* TODO: ngkim, enable verifyDeploymentIdExists */
+
+		// verifyDeploymentIdExists(deploymentId);
+		int resultStatus = 1;
+		String resultMsg = "Successfully uninstall " + serviceName + " from " + deploymentId;
+		
+		UninstallServiceResult result = new UninstallServiceResult();
+
+		result.setDeploymentID(deploymentId);
+		result.setServiceName(serviceName);
+		result.setResultStatus(resultStatus); // 1: success, -1: fail
+		
+		result.setResultMsg(resultMsg);
+
+		return result;
 	}
 
 	@RequestMapping(value = "/{deploymentId}/services/{serviceName}/mgmtUrl", method = RequestMethod.GET)
