@@ -1105,7 +1105,9 @@ public class DeploymentsController extends BaseRestController {
 
 		// install
 		if (installer.isAsyncInstallPossibleForApplication()) {
+			logger.info("[restInstallApplication] start ApplicationDeployerRunnable");
 			installer.run();
+			logger.info("[restInstallApplication] start ApplicationDeployerRunnable done...");
 		} else {
 			restConfig.getExecutorService().execute(installer);
 		}
@@ -1113,8 +1115,13 @@ public class DeploymentsController extends BaseRestController {
 		String firstServiceName = services.get(0).getName();
 		String firstPuName = ServiceUtils.getAbsolutePUName(appName,
 				firstServiceName);
+		
+		logger.info("[restInstallApplication] wait for Pu " + appName);
+
 		final boolean firstPuCreated = waitForPu(appName, firstServiceName,
 				WAIT_FOR_PU_SECONDS, TimeUnit.SECONDS);
+		
+		logger.info("[restInstallApplication] wait for Pu done " + appName);
 		if (!firstPuCreated) {
 			throw new RestErrorException(
 					CloudifyErrorMessages.FAILED_WAIT_FOR_PU.getName(),
@@ -1250,7 +1257,7 @@ public class DeploymentsController extends BaseRestController {
 		
 		boolean isDeploy = request.isDeploy();
 		// create a deployment ID that would be used across all services.
-		final String deploymentID = UUID.randomUUID().toString();
+		String deploymentID = UUID.randomUUID().toString();
 		
 		Map<String, String> params = utmConfig(greenZone, orangeZone, redZone);
 		params.put("seqId", seqId);
@@ -1287,7 +1294,11 @@ public class DeploymentsController extends BaseRestController {
 			appRequest.setApplicationName(appName);
 			appRequest.setApplcationFileUploadKey(applicationFileUploadKey);
 
-			if (isDeploy) restInstallApplication(appRequest, deploymentID);
+			if (isDeploy) {
+				logger.info("[configApplication] call restInstallApplication");
+				deploymentID = restInstallApplication(appRequest, deploymentID);
+				logger.info("[configApplication] return from restInstallApplication");
+			}
 			
 			debugMsg += "Request has been processed sucessfully (DeploymentID= " + deploymentID + ").";
 		} catch (RestErrorException e) {

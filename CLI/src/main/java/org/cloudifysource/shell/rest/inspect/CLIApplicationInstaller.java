@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Created with IntelliJ IDEA.
- * User: elip
+ * User: elip2
  * Date: 6/5/13
  * Time: 1:02 AM
  */
